@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "reserva-de-laboratorios"
+version = "0.1.0"
+description = ""
+authors = ["Lucas Santos Silva <luss1010@gmail.com>"]
+readme = "README.md"
+packages = [{include = "reserva_de_laboratorios"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.95.2"
+uvicorn = "^0.22.0"
+pydantic = {extras = ["dotenv"], version = "^1.10.8"}
+peewee = "^3.16.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
