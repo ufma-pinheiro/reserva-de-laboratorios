@@ -13,6 +13,7 @@ uvicorn = "^0.22.0"
 pydantic = {extras = ["dotenv", "email"], version = "^1.10.8"}
 peewee = "^3.16.2"
 trycourier = "^4.4.0"
+psycopg2 = "^2.9.6"
 
 
 [build-system]

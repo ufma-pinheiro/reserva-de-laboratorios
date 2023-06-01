@@ -1,20 +1,22 @@
 # Install Courier SDK: pip install trycourier
 from trycourier import Courier
 from config import settings
+from pydantic import EmailStr
+from typing import Dict
 
 client = Courier(auth_token=settings.courier_api_key)
 
-resp = client.send_message(
-    message={
-        "to": {
-            "email": settings.admin_email
-        },
-        "content": {
-            "title": "Welcome to Courier!",
-            "body": "Want to hear a joke? {{joke}}"
-        },
-        "data": {
-            "joke": "Why does Python live on land? Because it is above C level"
+
+def send(dest: EmailStr, title: str, body: str, data: Dict[str, str] = dict()):
+    resp = client.send_message(
+        message={
+            "to": {
+                "email": dest
+            },
+            "content": {
+                "title": title,
+                "body": body
+            },
+            "data": data
         }
-    }
-)
+    )

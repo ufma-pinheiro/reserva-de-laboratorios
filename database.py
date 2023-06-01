@@ -39,13 +39,16 @@ class Reservation(BaseModel):
     date = DateField(null=False)
     start_time = TextField(null=False)
     end_time = TextField(null=False)
+    reason = TextField(null=False)
     approved = BooleanField(default=False)
     id_room = ForeignKeyField(Room, backref="Reservations", null=False)
 
 
+database.create_tables([Room, Reservation])
+
+
 def add_room(**kwargs) -> Room:
-    room = Room(kwargs.get("name"), kwargs.get("location"),
-                kwargs.get("people_capacity"), kwargs.get("description", ""))
+    room = Room(**kwargs)
     room.save()
     return room
 
