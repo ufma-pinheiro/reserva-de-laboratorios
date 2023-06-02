@@ -1,6 +1,9 @@
 from peewee import *
 from time import time as timestamp
 from pydantic import BaseSettings
+from secrets import token_hex
+from typing import List
+from datetime import date
 
 
 class DatabaseSettings(BaseSettings):
@@ -40,6 +43,7 @@ class Reservation(BaseModel):
     start_time = TextField(null=False)
     end_time = TextField(null=False)
     reason = TextField(null=False)
+    token = TextField(default=token_hex(32), null=False, unique=True)
     approved = BooleanField(default=False)
     id_room = ForeignKeyField(Room, backref="Reservations", null=False)
 
@@ -51,6 +55,14 @@ def add_room(**kwargs) -> Room:
     room = Room(**kwargs)
     room.save()
     return room
+
+
+def get_rooms() -> List[Room]:
+    query = Room.select()
+    rooms = []
+    for room in query:
+        rooms.append(room.__dict__["__data__"])
+    return rooms
 
 
 def get_room_by_id(index: int) -> Room:
@@ -79,3 +91,32 @@ def add_reservation(**kwargs) -> Reservation:
     reservation = Reservation(**kwargs)
     reservation.save()
     return reservation
+
+
+def get_reservations():
+    query = Reservation.select().where(Reservation.date >= date.today())
+    reservations = []
+    for reservation in query:
+        aux = reservation.__dict__["__data__"]
+        room = get_room_by_id(reservation.id_room)
+        aux.update(room.__dict__["__data__"])
+        reservations.append(aux)
+    return reservations
+
+
+def validate_reservation(token: str) -> Reservation | None:
+    try:
+        reservation: Reservation = Reservation.get(Reservation.token == token)
+        reservation.approved = True
+        reservation.save()
+        return reservation
+    except DoesNotExist:
+        return None
+
+
+def verify_reservation(token: str) -> Reservation | None:
+    try:
+        reservation: Reservation = Reservation.get(Reservation.token == token)
+        return reservation.__dict__["__data__"]
+    except DoesNotExist:
+        return None

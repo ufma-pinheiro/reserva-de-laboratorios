@@ -1,11 +1,12 @@
 from fastapi import FastAPI
-#from fastapi.openapi.utils import get_openapi
+from fastapi.openapi.utils import get_openapi
 from config import settings
 from pydantic import BaseModel, EmailStr, Field
 from datetime import date, time
 from fastapi.exceptions import HTTPException
-from secrets import token_hex
+import email_sender
 import database
+from typing import List
 
 app = FastAPI()
 
@@ -26,6 +27,18 @@ class Reservation(BaseModel):
     id_room: int
 
 
+class ReservationData(BaseModel):
+    responsible_user_email: EmailStr = Field(default="user@ufma.br")
+    date: date
+    start_time: time = Field(default="08:00")
+    end_time: time = Field(default="18:00")
+    reason: str
+    name: str
+    location: str
+    people_capacity: int
+    description: str | None
+
+
 @app.get("/")
 async def root():
     return {"status": "ok"}
@@ -42,22 +55,64 @@ async def info():
 @app.post("/room")
 async def add_room(room: Room):
     db_room = database.add_room(**dict(room))
-    return db_room.__dict__["__data__"]
+    if db_room:
+        return HTTPException(200)
+
+
+@app.get("/room/all", response_model=List[Room])
+async def rooms():
+    list_room: List[Room] = database.get_rooms()
+    return list_room
+
+
+@app.get("/reservation/all", response_model=List[ReservationData])
+async def reservations():
+    list_reservation: List[Reservation] = database.get_reservations()
+    return list_reservation
 
 
 @app.post("/reservation")
 async def reserve(reservation: Reservation):
     if not reservation.responsible_user_email.endswith("@ufma.br"):
         raise HTTPException(401)
-    db_reservation = database.add_reservation(**dict(reservation))
-    return db_reservation.__dict__["__data__"]
+    try:
+        db_reservation = database.add_reservation(**dict(reservation))
+        email_sender.send(reservation.responsible_user_email,
+                          "Token para validação da reserva.",
+                          f"Token: {db_reservation.token}")
+    except Exception as e:
+        raise HTTPException(400, detail=str(e))
 
 
 @app.post("/reservation/to-approve")
 async def reserve_to_approve(token: str):
-    return token
+    reservation = database.validate_reservation(token)
+    if reservation:
+        room = database.get_room_by_id(reservation.id_room)
+        email_sender.send(reservation.responsible_user_email,
+                          "Reserva realizada com sucesso!",
+                          f"""A sala({room.name}) na data {reservation.date} e 
+                          horario {reservation.start_time} às {reservation.end_time},
+                          está reservada para {reservation.responsible_user_email},
+                          para verificar acesse o sistemas de reserva e verifique com o codigo: 
+                          {reservation.token} """)
+    else:
+        raise HTTPException(404)
 
-'''
+
+@app.post("/reservation/verify", response_model=ReservationData)
+async def reserve_verify(token: str):
+    reservation = database.verify_reservation(token)
+    if reservation:
+        if reservation["approved"]:
+            room = database.get_room_by_id(reservation["id_room"])
+            reservation.update(room.__dict__["__data__"])
+            return reservation
+        raise HTTPException(204)
+    else:
+        raise HTTPException(404)
+
+
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
@@ -68,10 +123,11 @@ def custom_openapi():
         routes=app.routes,
     )
     openapi_schema["info"]["x-logo"] = {
-        "url": "https://portalpadrao.ufma.br/site/institucional/superintendencias/sce/manual-da-marca/png-logo-ufma-colorido.png"
+        "url": "https://portalpadrao.ufma.br/site/institucional/" +
+               "superintendencias/sce/manual-da-marca/png-logo-ufma-colorido.png"
     }
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
 
-app.openapi = custom_openapi'''
+app.openapi = custom_openapi
