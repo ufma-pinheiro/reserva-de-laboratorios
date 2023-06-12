@@ -7,6 +7,9 @@ from fastapi.exceptions import HTTPException
 import email_sender
 import database
 from typing import List
+from authorization import Authorization
+
+auth = Authorization()
 
 app = FastAPI()
 
@@ -52,11 +55,21 @@ async def info():
     }
 
 
+@app.get("/token")
+async def send_token():
+    email_sender.send(settings.admin_email,
+                      "Token de autorização.",
+                      f"Token: {auth.add()}\nValido por {settings.token_duration} minutos.")
+
+
 @app.post("/room")
-async def add_room(room: Room):
-    db_room = database.add_room(**dict(room))
-    if db_room:
-        return HTTPException(200)
+async def add_room(room: Room, token: str):
+    if auth.verify(token):
+        db_room = database.add_room(**dict(room))
+        if db_room:
+            return HTTPException(200)
+    else:
+        raise HTTPException(401)
 
 
 @app.get("/room/all", response_model=List[Room])
