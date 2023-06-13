@@ -38,7 +38,7 @@ class Room(BaseModel):
 
 
 class Reservation(BaseModel):
-    responsible_user_email = TextField(unique=True, null=False)
+    responsible_user_email = TextField(null=False)
     date = DateField(null=False)
     start_time = TextField(null=False)
     end_time = TextField(null=False)

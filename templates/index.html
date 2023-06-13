@@ -1,0 +1,30 @@
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+    <title>Reserva de Salas</title>
+</head>
+<body>
+<h1>Bem-vindo ao Sistema de Reserva de Salas</h1>
+<h6>Esse sistema está atualmente funcionando somente para o laboratorio de informatica do
+predio das licenciaturas, e em fase beta.</h6>
+<select id="meuSeletor"></select>
+
+<script>
+    // Obtém uma referência ao elemento seletor
+    var seletor = document.getElementById("meuSeletor");
+
+    // Array de opções
+    var opcoes = ["Opção 1", "Opção 2", "Opção 3"];
+
+    // Adiciona as opções ao seletor
+    for (var i = 0; i < opcoes.length; i++) {
+      var option = document.createElement("option");
+      option.text = opcoes[i];
+      option.value = "opcao" + (i + 1);
+      seletor.add(option);
+    }
+  </script>
+</body>
+</html>

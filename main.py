@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, Request
 from fastapi.openapi.utils import get_openapi
 from config import settings
 from pydantic import BaseModel, EmailStr, Field
@@ -7,11 +7,16 @@ from fastapi.exceptions import HTTPException
 import email_sender
 import database
 from typing import List
-from authorization import Authorization
-
-auth = Authorization()
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from starlette.status import HTTP_401_UNAUTHORIZED
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+security = HTTPBasic()
+templates = Jinja2Templates(directory="templates")
 
 
 class Room(BaseModel):
@@ -19,6 +24,10 @@ class Room(BaseModel):
     location: str
     people_capacity: int
     description: str | None
+
+
+class RoomWithID(Room):
+    id: int
 
 
 class Reservation(BaseModel):
@@ -30,12 +39,7 @@ class Reservation(BaseModel):
     id_room: int
 
 
-class ReservationData(BaseModel):
-    responsible_user_email: EmailStr = Field(default="user@ufma.br")
-    date: date
-    start_time: time = Field(default="08:00")
-    end_time: time = Field(default="18:00")
-    reason: str
+class ReservationData(Reservation):
     name: str
     location: str
     people_capacity: int
@@ -43,8 +47,8 @@ class ReservationData(BaseModel):
 
 
 @app.get("/")
-async def root():
-    return {"status": "ok"}
+async def root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 @app.get("/info")
@@ -55,26 +59,23 @@ async def info():
     }
 
 
-@app.get("/token")
-async def send_token():
-    email_sender.send(settings.admin_email,
-                      "Token de autorização.",
-                      f"Token: {auth.add()}\nValido por {settings.token_duration} minutos.")
-
-
 @app.post("/room")
-async def add_room(room: Room, token: str):
-    if auth.verify(token):
-        db_room = database.add_room(**dict(room))
-        if db_room:
-            return HTTPException(200)
-    else:
-        raise HTTPException(401)
+async def add_room(room: Room, credentials: HTTPBasicCredentials = Depends(security)):
+    if not (credentials.username == settings.admin_email and
+            credentials.password == settings.admin_password):
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail="Credenciais inválidas",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    db_room = database.add_room(**dict(room))
+    if db_room:
+        return HTTPException(200)
 
 
-@app.get("/room/all", response_model=List[Room])
+@app.get("/room/all", response_model=List[RoomWithID])
 async def rooms():
-    list_room: List[Room] = database.get_rooms()
+    list_room: List[RoomWithID] = database.get_rooms()
     return list_room
 
 
