@@ -11,6 +11,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from starlette.status import HTTP_401_UNAUTHORIZED
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -49,6 +50,11 @@ class ReservationData(Reservation):
 @app.get("/")
 async def root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/confirmation")
+async def confirmation(request: Request):
+    return templates.TemplateResponse("confirmation.html", {"request": request})
 
 
 @app.get("/info")
@@ -94,6 +100,7 @@ async def reserve(reservation: Reservation):
         email_sender.send(reservation.responsible_user_email,
                           "Token para validação da reserva.",
                           f"Token: {db_reservation.token}")
+        raise HTTPException(200)
     except Exception as e:
         raise HTTPException(400, detail=str(e))
 

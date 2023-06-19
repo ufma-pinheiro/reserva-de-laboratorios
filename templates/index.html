@@ -38,41 +38,102 @@
 <div class="container">
     <h1 class="mt-5">Bem-vindo ao Sistema de Reserva de Salas</h1>
     <div class="alert alert-warning" role="alert">
-        <h6>Esse sistema está atualmente funcionando somente para o laboratório de informática do prédio das licenciaturas, e em fase beta.</h6>    
+        <h6>Esse sistema está atualmente funcionando somente para o laboratório de informática do prédio das licenciaturas, e em fase beta.</h6>
     </div>
-    
-    <!-- Início do dropdown -->
-    <div class="text-center mt-3">
-      <div class="dropdown">
-        <button id="meuBotao" class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-          Escolha uma opção
-        </button>
-        <ul id="meuSeletor" class="dropdown-menu">
-          <!-- As opções serão adicionadas aqui pelo JavaScript -->
-        </ul>
-      </div>
-    </div>
-    <!-- Fim do dropdown -->
 
-</div>
+        <div class="text-center mt-3">
+            <form id="reservaForm">
+                <div class="form-group">
+                    <label for="id_room">Sala:</label>
+                    <select class="form-control" id="id_room" name="sala">
+                        <!-- As opções serão adicionadas aqui pelo JavaScript -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="responsible_user_email">Email:</label>
+                    <input type="email" class="form-control" id="responsible_user_email" name="responsible_user_email">
+                </div>
+
+                <div class="form-group">
+                    <label for="date">Data:</label>
+                    <input type="date" class="form-control" id="date" name="date">
+                </div>
+
+                <div class="form-group">
+                    <label for="start_time">Horário de Início:</label>
+                    <input type="time" class="form-control" id="start_time" name="start_time">
+                </div>
+
+                <div class="form-group">
+                    <label for="end_time">Horário de Término:</label>
+                    <input type="time" class="form-control" id="end_time" name="end_time">
+                </div>
+
+                <div class="form-group">
+                    <label for="reason">Razão:</label>
+                    <textarea class="form-control" id="reason" name="reason"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Reservar</button>
+            </form>
+        </div>
+    </div>
 
 <script>
     // Obtém uma referência ao elemento dropdown
-    var dropdown = document.getElementById("meuSeletor");
+    var dropdown = document.getElementById("id_room");
 
     // Array de opções
-    var opcoes = ["Opção 1", "Opção 2", "Opção 3"];
-
+    fetch('/room/all')
+  .then(response => response.json())
+  .then(data => {
     // Adiciona as opções ao dropdown
-    for (var i = 0; i < opcoes.length; i++) {
-        var li = document.createElement("li");
-        var a = document.createElement("a");
-        a.classList.add("dropdown-item");
-        a.href = "#";
-        a.textContent = opcoes[i];
-        li.appendChild(a);
-        dropdown.appendChild(li);
+    for (var i = 0; i < data.length; i++) {
+        var option = document.createElement("option");
+        option.text = data[i].name+", "+data[i].location;
+        option.value = data[i].id;
+        dropdown.add(option);
     }
+  })
+  .catch(error => {
+    console.error('Ocorreu um erro:', error);
+  });
+
+  // subimetendo reserva
+  var form = document.getElementById("reservaForm");
+
+    form.addEventListener("submit", function(event) {
+      event.preventDefault(); // Impede o envio padrão do formulário
+
+      var data = {
+        responsible_user_email: form.elements.responsible_user_email.value,
+        date: form.elements.date.value,
+        start_time: form.elements.start_time.value,
+        end_time: form.elements.end_time.value,
+        reason: form.elements.reason.value,
+        id_room: parseInt(form.elements.id_room.value)
+      };
+      console.log(data);
+
+      fetch("/reservation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(result => {
+        console.log(result); // Faça o que desejar com a resposta do servidor
+        window.location.href = '/confirmation';
+
+      })
+      .catch(error => {
+        console.error("Ocorreu um erro:", error);
+      });
+    });
+
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
