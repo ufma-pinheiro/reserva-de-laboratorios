@@ -57,6 +57,18 @@ async def confirmation(request: Request):
     return templates.TemplateResponse("confirmation.html", {"request": request})
 
 
+@app.get("/verify/{token}")
+async def verify(token: str, request: Request):
+    reservation = database.verify_reservation(token)
+    if reservation:
+        if reservation["approved"]:
+            room = database.get_room_by_id(reservation["id_room"])
+            reservation.update(room.__dict__["__data__"])
+            return templates.TemplateResponse("verify.html", {"request": request,
+                                                              "reservation": reservation})
+    return RedirectResponse("/")
+
+
 @app.get("/info")
 async def info():
     return {
