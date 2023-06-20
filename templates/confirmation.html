@@ -62,7 +62,7 @@
       .then(result => {
         console.log(result); // Faça o que desejar com a resposta do servidor
         alert("Reserva confirmada com sucesso!\nUm comprovante foi enviado para seu email!");
-        window.location.href = '/';
+        window.location.href = '/verify/'+form.elements.token.value;
       })
       .catch(error => {
         console.error("Ocorreu um erro:", error);
