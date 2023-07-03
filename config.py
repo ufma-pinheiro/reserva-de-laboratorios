@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     version: str = "0.1.0"
     courier_api_key: str
     token_duration: int
+    secret_token: str
 
     class Config:
         # `.env.prod` takes priority over `.env`
