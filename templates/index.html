@@ -29,19 +29,28 @@
     <div class="container">
         <a class="navbar-brand" href="#">
             <img src="https://portais.ufma.br/PortalUnidade/img/brasao-normal.png" alt="Logo">
-            <span>UFMA-PINHEIRO</span>
+            <span style="font-weight: bold; margin-left: 10px;">UFMA-PINHEIRO</span>
         </a>
+        {% if user %}
+        <div style="padding: 10px; border-radius: 5px; margin-left: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <img src="{{ user.picture }}" style="max-width: 20%; max-height: 20%;
+                 height: auto; border-radius: 50%;">
+                <span style="color: #fff; margin-right: 10px;">{{ user.name }}</span>
+                <div style="border: 2px solid #fff; border-radius: 10px; padding: 5px;
+                 display: flex; align-items: center; justify-content: center;">
+                    <a href="/logout" style="text-decoration: none; color: #fff;">Logout</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </nav>
 
+
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-{% if user %}
-<pre>
-{{ user|tojson }}
-</pre>
-<a href="/logout">logout</a>
-{% else %}
+{% if not user %}
 <div id = "bt_login" class="g_id_signin" data-type="standard" data-size="large" data-theme="outline" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left">
     <div class="S9gUrf-YoZ4jf" style="position: relative;">
         <div>
