@@ -120,3 +120,13 @@ def verify_reservation(token: str) -> Reservation | None:
         return reservation.__dict__["__data__"]
     except DoesNotExist:
         return None
+
+
+def time_block_list(id_room: int, reservation_date):
+    reservations: List[Reservation] = Reservation.select(Reservation.id_room == id_room and
+                                                         Reservation.date == reservation_date)
+    block_list = []
+    for reservation in reservations:
+        block_list.append((reservation.start_time, reservation.end_time))
+        pass
+    return block_list

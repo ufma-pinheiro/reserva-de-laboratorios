@@ -29,10 +29,22 @@
     <div class="container">
         <a class="navbar-brand" href="#">
             <img src="https://portais.ufma.br/PortalUnidade/img/brasao-normal.png" alt="Logo">
-            <span>UFMA-PINHEIRO</span>
+            <span style="font-weight: bold; margin-left: 10px;">UFMA-PINHEIRO</span>
         </a>
+        <div style="padding: 10px; border-radius: 5px; margin-left: 20px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <img src="{{ user.picture }}" style="max-width: 20%; max-height: 20%;
+                 height: auto; border-radius: 50%;">
+                <span style="color: #fff; margin-right: 10px;">{{ user.name }}</span>
+                <div style="border: 2px solid #fff; border-radius: 10px; padding: 5px;
+                 display: flex; align-items: center; justify-content: center;">
+                    <a href="/logout" style="text-decoration: none; color: #fff;">Logout</a>
+                </div>
+            </div>
+        </div>
     </div>
 </nav>
+
 
 <!-- Mensagem de bem-vindo -->
 <div class="container">
@@ -48,11 +60,6 @@
                     <select class="form-control" id="id_room" name="sala">
                         <!-- As opções serão adicionadas aqui pelo JavaScript -->
                     </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="responsible_user_email">Email:</label>
-                    <input type="email" class="form-control" id="responsible_user_email" name="responsible_user_email" value="{{ user.email }}">
                 </div>
 
                 <div class="form-group">
@@ -74,7 +81,7 @@
                     <label for="reason">Razão:</label>
                     <textarea class="form-control" id="reason" name="reason"></textarea>
                 </div>
-
+                <br>
                 <button type="submit" class="btn btn-primary">Reservar</button>
             </form>
         </div>
@@ -107,7 +114,7 @@
       event.preventDefault(); // Impede o envio padrão do formulário
 
       var data = {
-        responsible_user_email: form.elements.responsible_user_email.value,
+        responsible_user_email: "{{ user.email }}",
         date: form.elements.date.value,
         start_time: form.elements.start_time.value,
         end_time: form.elements.end_time.value,
