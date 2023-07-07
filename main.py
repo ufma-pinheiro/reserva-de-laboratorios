@@ -16,7 +16,6 @@ from starlette.requests import Request
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.responses import HTMLResponse, RedirectResponse
 from authlib.integrations.starlette_client import OAuth, OAuthError
-import json
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -170,6 +169,7 @@ async def reserve(reservation: Reservation):
 
 @app.post("/reservation/to-approve")
 async def reserve_to_approve(token: str):
+    """Endpoint responsavel pela auto-aprovação de uma reserva"""
     reservation = database.validate_reservation(token)
     if reservation:
         room = database.get_room_by_id(reservation.id_room)
@@ -184,8 +184,10 @@ async def reserve_to_approve(token: str):
         raise HTTPException(404)
 
 
-@app.post("/reservation/verify", response_model=ReservationData)
+@app.get("/reservation/verify/{token}", response_model=ReservationData)
 async def reserve_verify(token: str):
+    """Endpoint responsavel por demonstrar que a determinada reserva é valida\n
+    Retorna um json com os dados da reserva"""
     reservation = database.verify_reservation(token)
     if reservation:
         if reservation["approved"]:
@@ -195,6 +197,20 @@ async def reserve_verify(token: str):
         raise HTTPException(204)
     else:
         raise HTTPException(404)
+
+
+@app.get("/time-block-list")
+async def time_block_list(id_room: int, reservation_date: date):
+    """Retorna uma lista pares de inicio e fim de horarios já reservados"""
+    return database.time_block_list(id_room, reservation_date)
+
+
+@app.get("/check-time-collision")
+async def check_time_collision(id_room: int, reservation_date: date, start_time: time,
+                               end_time: time):
+    """Retorna True caso o horario esteja disponivel"""
+    return database.check_time_collision(str(start_time), str(end_time),
+                                         database.time_block_list(id_room, reservation_date))
 
 
 def custom_openapi():

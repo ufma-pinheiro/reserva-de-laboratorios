@@ -3,7 +3,7 @@ from time import time as timestamp
 from pydantic import BaseSettings
 from secrets import token_hex
 from typing import List
-from datetime import date
+from datetime import date, datetime
 
 
 class DatabaseSettings(BaseSettings):
@@ -123,10 +123,22 @@ def verify_reservation(token: str) -> Reservation | None:
 
 
 def time_block_list(id_room: int, reservation_date):
-    reservations: List[Reservation] = Reservation.select(Reservation.id_room == id_room and
-                                                         Reservation.date == reservation_date)
+    reservations: List[Reservation] = Reservation.select().where(
+        Reservation.id_room == id_room and Reservation.date == reservation_date)
     block_list = []
     for reservation in reservations:
         block_list.append((reservation.start_time, reservation.end_time))
         pass
     return block_list
+
+
+def check_time_collision(start_time: str, end_time: str, block_list: List[List[str]]):
+    time_format = "%H:%M:%S"
+    start_time = datetime.strptime(start_time, time_format)
+    end_time = datetime.strptime(end_time, time_format)
+    for element in block_list:
+        st = datetime.strptime(element[0], time_format)
+        et = datetime.strptime(element[1], time_format)
+        if st <= start_time < et or st < end_time <= et:
+            return False
+    return True
