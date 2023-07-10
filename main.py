@@ -64,19 +64,19 @@ class ReservationData(Reservation):
     description: str | None
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     user = request.session.get('user')
     return templates.TemplateResponse("index.html", {"request": request, "user": user})
 
 
-@app.get('/login')
+@app.get('/login', response_class=RedirectResponse)
 async def login(request: Request):
     redirect_uri = request.url_for('auth')
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
-@app.get('/auth')
+@app.get('/auth', response_class=RedirectResponse)
 async def auth(request: Request):
     try:
         token = await oauth.google.authorize_access_token(request)
@@ -88,23 +88,40 @@ async def auth(request: Request):
     return RedirectResponse(url='/reserve')
 
 
-@app.get('/logout')
+@app.get('/logout', response_class=RedirectResponse)
 async def logout(request: Request):
     request.session.pop('user', None)
     return RedirectResponse(url='/')
 
 
 @app.get("/reserve")
-async def root(request: Request):
+async def reserve(request: Request):
     user = request.session.get('user')
     if user:
-        return templates.TemplateResponse("reserve.html", {"request": request, "user": user})
+        list_room: List[RoomWithID] = database.get_rooms()
+        return templates.TemplateResponse("reserve.html", {"request": request, "user": user,
+                                                           "rooms": list_room})
     return RedirectResponse(url='/')
 
 
 @app.get("/confirmation")
 async def confirmation(request: Request):
     return templates.TemplateResponse("confirmation.html", {"request": request})
+
+
+@app.get("/make-reservation")
+async def form_(request: Request):
+    user = request.session.get("user")
+    form_data = dict(request.query_params)
+    if user:
+        form_data["responsible_user_email"] = user["email"]
+        reservation = Reservation(**form_data)
+        db_reservation = database.add_reservation(**dict(reservation))
+        email_sender.send(reservation.responsible_user_email,
+                          "Token para validação da reserva.",
+                          f"Token: {db_reservation.token}")
+        return RedirectResponse(url="/confirmation")
+    return RedirectResponse(url="/")
 
 
 @app.get("/verify/{token}")
@@ -154,15 +171,15 @@ async def reservations():
 
 
 @app.post("/reservation")
-async def reserve(reservation: Reservation):
-    if not reservation.responsible_user_email.endswith("@ufma.br"):
+async def reserve(reservation: Reservation, request: Request):
+    user = request.session.get("user", {})
+    if user.get("hd") != "ufma.br":
         raise HTTPException(401)
     try:
         db_reservation = database.add_reservation(**dict(reservation))
         email_sender.send(reservation.responsible_user_email,
                           "Token para validação da reserva.",
                           f"Token: {db_reservation.token}")
-        raise HTTPException(200)
     except Exception as e:
         raise HTTPException(400, detail=str(e))
 
